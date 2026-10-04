@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Study Assistant</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        #loadingMessage {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            text-align: center;
+            background: #eef4ff;
+            color: #1769e0;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Voice Button */
+
+        .voice-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        #voiceButton {
+            width: auto;
+            margin-top: 0;
+            padding: 12px 18px;
+            background: #f1f5f9;
+            color: #1769e0;
+            border: 1px solid #dbe3ef;
+        }
+
+        #voiceButton:hover {
+            background: #e8f0ff;
+            box-shadow: none;
+            transform: none;
+        }
+
+        #voiceStatus {
+            display: none;
+            align-items: center;
+            color: #1769e0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Markdown Answer */
+
+        .answer h1,
+        .answer h2,
+        .answer h3 {
+            color: #1769e0;
+            margin-top: 24px;
+            margin-bottom: 10px;
+        }
+
+        .answer p {
+            margin: 10px 0;
+        }
+
+        .answer ul,
+        .answer ol {
+            padding-left: 25px;
+            margin: 10px 0;
+        }
+
+        .answer li {
+            margin-bottom: 6px;
+        }
+
+        .answer strong {
+            color: #1f2937;
+        }
+
+        .answer code {
+            background: #eef2f7;
+            padding: 3px 6px;
+            border-radius: 5px;
+            font-family: Consolas, monospace;
+        }
+
+        .answer pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 18px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .answer pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 14px;
+        }
+
+        .answer blockquote {
+            border-left: 4px solid #1769e0;
+            padding-left: 15px;
+            margin-left: 0;
+            color: #667085;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+
+    <div class="header">
+
+        <div class="logo">
+            📚
+        </div>
+
+        <div>
+            <h1>AI Study Assistant</h1>
+            <p>Ask questions and get AI-powered study answers.</p>
+        </div>
+
+    </div>
+
+
+    <!-- Question Form -->
+
+    <form method="POST" class="question-box">
+
+        <label>Subject</label>
+
+        <select name="subject">
+
+            <option value="General"
+                {% if subject == "General" %}selected{% endif %}>
+                General
+            </option>
+
+            <option value="Python"
+                {% if subject == "Python" %}selected{% endif %}>
+                Python
+            </option>
+
+            <option value="Computer Science"
+                {% if subject == "Computer Science" %}selected{% endif %}>
+                Computer Science
+            </option>
+
+            <option value="Mathematics"
+                {% if subject == "Mathematics" %}selected{% endif %}>
+                Mathematics
+            </option>
+
+            <option value="Science"
+                {% if subject == "Science" %}selected{% endif %}>
+                Science
+            </option>
+
+            <option value="English"
+                {% if subject == "English" %}selected{% endif %}>
+                English
+            </option>
+
+        </select>
+
+
+        <label>Answer Type</label>
+
+        <select name="answer_type">
+
+            <option value="Short"
+                {% if answer_type == "Short" %}selected{% endif %}>
+                Short
+            </option>
+
+            <option value="Detailed"
+                {% if answer_type == "Detailed" %}selected{% endif %}>
+                Detailed
+            </option>
+
+        </select>
+
+
+        <label>Your Question</label>
+
+        <textarea
+            id="questionBox"
+            name="question"
+            placeholder="Type your study question here..."
+            required>{{ question }}</textarea>
+
+
+        <!-- Voice Input -->
+
+        <div class="voice-row">
+
+            <button
+                type="button"
+                id="voiceButton">
+                🎤 Speak
+            </button>
+
+            <div id="voiceStatus">
+                🎙️ Listening...
+            </div>
+
+        </div>
+
+
+        <button type="submit" id="askButton">
+            🤖 Ask AI
+        </button>
+
+
+        <div id="loadingMessage">
+            ⏳ AI is thinking... Please wait.
+        </div>
+
+    </form>
+
+
+    <!-- AI Answer -->
+
+    {% if answer %}
+
+    <div class="answer-box">
+
+        <h2>💡 Answer</h2>
+
+        <div class="answer" id="answerContent">
+            {{ answer }}
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- History -->
+
+    {% if history %}
+
+    <div class="history">
+
+        <div class="history-header">
+
+            <h2>📖 Recent Questions</h2>
+
+            <a href="/clear" class="clear-btn">
+                Clear History
+            </a>
+
+        </div>
+
+
+        {% for item in history %}
+
+        <div class="history-item">
+
+            <div class="history-question">
+                {{ item.question }}
+            </div>
+
+            <div class="history-subject">
+                {{ item.subject }}
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- Markdown Parser -->
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+
+<script>
+
+    /* Markdown Formatting */
+
+    const answerContent = document.getElementById("answerContent");
+
+    if (answerContent) {
+
+        const markdownText = answerContent.textContent;
+
+        answerContent.innerHTML = marked.parse(markdownText);
+
+    }
+
+
+    /* Loading */
+
+    const form = document.querySelector(".question-box");
+    const button = document.getElementById("askButton");
+    const loadingMessage = document.getElementById("loadingMessage");
+
+    form.addEventListener("submit", function () {
+
+        button.disabled = true;
+
+        button.innerText = "⏳ Thinking...";
+
+        loadingMessage.style.display = "block";
+
+    });
+
+
+    /* Voice Input */
+
+    const voiceButton = document.getElementById("voiceButton");
+    const questionBox = document.getElementById("questionBox");
+    const voiceStatus = document.getElementById("voiceStatus");
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+
+        const recognition = new SpeechRecognition();
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        voiceButton.addEventListener("click", function () {
+
+            recognition.start();
+
+            voiceButton.innerText = "🛑 Listening...";
+
+            voiceStatus.style.display = "flex";
+
+        });
+
+
+        recognition.onresult = function (event) {
+
+            const text =
+                event.results[0][0].transcript;
+
+            questionBox.value = text;
+
+        };
+
+
+        recognition.onend = function () {
+
+            voiceButton.innerText = "🎤 Speak";
+
+            voiceStatus.style.display = "none";
+
+        };
+
+
+        recognition.onerror = function () {
+
+            voiceButton.innerText = "🎤 Speak";
+
+            voiceStatus.style.display = "none";
+
+        };
+
+    } else {
+
+        voiceButton.disabled = true;
+
+        voiceButton.innerText = "🎤 Not Supported";
+
+    }
+
+</script>
+
+</body>
+
+</html>ss

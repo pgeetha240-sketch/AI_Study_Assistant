@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Quiz Generator</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+
+        .quiz-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.07);
+            margin-bottom: 25px;
+        }
+
+        .quiz-box h1 {
+            margin-top: 0;
+            color: #1769e0;
+        }
+
+        .quiz-box p {
+            color: #667085;
+        }
+
+        label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #344054;
+        }
+
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d0d5dd;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            outline: none;
+        }
+
+        select:focus,
+        textarea:focus {
+            border-color: #1769e0;
+            box-shadow: 0 0 0 4px rgba(23, 105, 224, 0.12);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .generate-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1769e0, #3b82f6);
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(23, 105, 224, 0.25);
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 18px;
+            color: #1769e0;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* Quiz Result */
+
+        .quiz-result {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.07);
+            border-left: 6px solid #1769e0;
+        }
+
+        .quiz-result h2 {
+            margin-top: 0;
+            color: #1769e0;
+        }
+
+        .quiz-content {
+            line-height: 1.8;
+        }
+
+        .quiz-content h1,
+        .quiz-content h2,
+        .quiz-content h3 {
+            color: #1769e0;
+            margin-top: 25px;
+        }
+
+        .quiz-content strong {
+            color: #1f2937;
+        }
+
+        .quiz-content code {
+            background: #eef2f7;
+            padding: 3px 6px;
+            border-radius: 5px;
+        }
+
+        #loadingMessage {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            text-align: center;
+            background: #eef4ff;
+            color: #1769e0;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Quiz Form -->
+
+    <div class="quiz-box">
+
+        <h1>🎯 AI Quiz Generator</h1>
+
+        <p>
+            Generate practice questions using AI.
+        </p>
+
+        <form method="POST" id="quizForm">
+
+            <label>Subject</label>
+
+            <select name="subject">
+
+                <option value="Python"
+                    {% if subject == "Python" %}selected{% endif %}>
+                    Python
+                </option>
+
+                <option value="Computer Science"
+                    {% if subject == "Computer Science" %}selected{% endif %}>
+                    Computer Science
+                </option>
+
+                <option value="Mathematics"
+                    {% if subject == "Mathematics" %}selected{% endif %}>
+                    Mathematics
+                </option>
+
+                <option value="Science"
+                    {% if subject == "Science" %}selected{% endif %}>
+                    Science
+                </option>
+
+                <option value="English"
+                    {% if subject == "English" %}selected{% endif %}>
+                    English
+                </option>
+
+                <option value="General"
+                    {% if subject == "General" %}selected{% endif %}>
+                    General
+                </option>
+
+            </select>
+
+
+            <label>Topic</label>
+
+            <textarea
+                name="topic"
+                placeholder="Example: Python variables"
+                required>{{ topic }}</textarea>
+
+
+            <label>Number of Questions</label>
+
+            <select name="count">
+
+                <option value="5"
+                    {% if count == "5" %}selected{% endif %}>
+                    5 Questions
+                </option>
+
+                <option value="10"
+                    {% if count == "10" %}selected{% endif %}>
+                    10 Questions
+                </option>
+
+            </select>
+
+
+            <button
+                type="submit"
+                class="generate-btn"
+                id="generateButton">
+
+                🤖 Generate Quiz
+
+            </button>
+
+
+            <div id="loadingMessage">
+                ⏳ AI is creating your quiz...
+            </div>
+
+        </form>
+
+
+        <a href="/" class="back-btn">
+            ← Back to Study Assistant
+        </a>
+
+    </div>
+
+
+    <!-- Quiz Result -->
+
+    {% if quiz %}
+
+    <div class="quiz-result">
+
+        <h2>📝 Your Quiz</h2>
+
+        <div class="quiz-content" id="quizContent">
+            {{ quiz }}
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- Markdown Parser -->
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+
+<script>
+
+    const quizContent =
+        document.getElementById("quizContent");
+
+    if (quizContent) {
+
+        const markdownText =
+            quizContent.textContent;
+
+        quizContent.innerHTML =
+            marked.parse(markdownText);
+
+    }
+
+
+    const quizForm =
+        document.getElementById("quizForm");
+
+    const generateButton =
+        document.getElementById("generateButton");
+
+    const loadingMessage =
+        document.getElementById("loadingMessage");
+
+
+    quizForm.addEventListener("submit", function () {
+
+        generateButton.disabled = true;
+
+        generateButton.innerText =
+            "⏳ Creating Quiz...";
+
+        loadingMessage.style.display =
+            "block";
+
+    });
+
+</script>
+
+</body>
+
+</html>
